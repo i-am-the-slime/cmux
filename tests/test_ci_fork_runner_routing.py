@@ -258,8 +258,16 @@ class ForkRunnerRoutingTests(unittest.TestCase):
         to_variable = (
             "runs-on: ${{ " + clause + " && vars.MACOS_RUNNER_15 || 'blacksmith-6vcpu-macos-15' }}"
         )
+        # The fork branch sits under the overflow condition, so with overflow
+        # off a fork pull request falls through to MACOS_RUNNER_26.
+        nested = (
+            "runs-on: ${{ vars.CI_PAID_MACOS_OVERFLOW == '1' && ("
+            + clause
+            + " && 'blacksmith-6vcpu-macos-15' || vars.MACOS_RUNNER_15) || vars.MACOS_RUNNER_26 }}"
+        )
         self.assertIsNone(fork_pull_request_gate_error(gated))
         self.assertIsNone(fork_pull_request_gate_error("runs-on: macos-15"))
+        self.assertIsNotNone(fork_pull_request_gate_error(nested))
         self.assertIsNotNone(fork_pull_request_gate_error(ungated))
         self.assertIsNotNone(fork_pull_request_gate_error(late))
         self.assertIsNotNone(fork_pull_request_gate_error(null_unsafe))
